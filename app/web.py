@@ -18,76 +18,179 @@ HTML_PAGE = """<!doctype html>
     <title>AI 问答助手</title>
     <style>
       :root {
-        color-scheme: light dark;
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        font-family: "Inter", "PingFang SC", "Microsoft YaHei", -apple-system, BlinkMacSystemFont,
+          "Segoe UI", sans-serif;
+        --bg: #f2f6ff;
+        --card: rgba(255, 255, 255, 0.82);
+        --text: #111827;
+        --muted: #6b7280;
+        --border: #d9e1f3;
+        --primary: #3b82f6;
+        --primary-deep: #2563eb;
+        --success: #0f766e;
+        --danger: #b91c1c;
       }
       body {
         margin: 0;
         display: grid;
         place-items: center;
         min-height: 100vh;
-        background: #f5f7fb;
+        color: var(--text);
+        background: radial-gradient(circle at 10% 10%, #e0ecff 0%, #f5f8ff 45%, #eef3ff 100%);
+      }
+      body::before,
+      body::after {
+        content: "";
+        position: fixed;
+        width: 280px;
+        height: 280px;
+        border-radius: 50%;
+        filter: blur(45px);
+        z-index: -1;
+        opacity: 0.45;
+      }
+      body::before {
+        background: #93c5fd;
+        top: -80px;
+        left: -80px;
+      }
+      body::after {
+        background: #c4b5fd;
+        bottom: -110px;
+        right: -80px;
       }
       .card {
         width: min(900px, 92vw);
-        background: #fff;
-        border-radius: 14px;
-        padding: 20px;
-        box-shadow: 0 10px 32px rgba(0, 0, 0, 0.08);
+        background: var(--card);
+        border: 1px solid rgba(255, 255, 255, 0.9);
+        backdrop-filter: blur(10px);
+        border-radius: 20px;
+        padding: 24px;
+        box-shadow: 0 18px 45px rgba(30, 64, 175, 0.12);
       }
       h1 {
-        margin: 0 0 10px;
-        font-size: 22px;
+        margin: 0 0 6px;
+        font-size: 26px;
+        letter-spacing: 0.02em;
       }
       p.meta {
-        margin: 0 0 14px;
-        color: #6b7280;
+        margin: 0 0 18px;
+        color: var(--muted);
         font-size: 14px;
+      }
+      .meta-chip {
+        display: inline-flex;
+        align-items: center;
+        margin-right: 6px;
+        margin-top: 6px;
+        padding: 4px 10px;
+        border-radius: 999px;
+        background: rgba(59, 130, 246, 0.1);
+      }
+      label {
+        display: block;
+        margin-bottom: 8px;
+        font-size: 14px;
+        color: #374151;
       }
       textarea {
         width: 100%;
-        min-height: 100px;
-        border: 1px solid #d1d5db;
-        border-radius: 10px;
-        padding: 12px;
+        min-height: 88px;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 12px 14px;
         box-sizing: border-box;
         resize: vertical;
+        font-size: 15px;
+        transition: all 0.2s ease;
+        outline: none;
+        background: rgba(255, 255, 255, 0.9);
+      }
+      textarea:focus {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.16);
       }
       .row {
-        margin-top: 12px;
+        margin-top: 14px;
         display: flex;
-        gap: 8px;
+        gap: 10px;
       }
       button {
         border: 0;
-        background: #2563eb;
+        background: linear-gradient(135deg, var(--primary), var(--primary-deep));
         color: #fff;
-        border-radius: 10px;
-        padding: 10px 16px;
+        border-radius: 12px;
+        padding: 11px 18px;
+        font-size: 14px;
+        font-weight: 600;
         cursor: pointer;
+        transition: transform 0.18s ease, box-shadow 0.18s ease, opacity 0.2s;
+      }
+      button:hover:not(:disabled) {
+        transform: translateY(-1px);
+        box-shadow: 0 10px 18px rgba(37, 99, 235, 0.25);
+      }
+      button:disabled {
+        opacity: 0.65;
+        cursor: not-allowed;
+      }
+      #clear {
+        background: #fff;
+        color: #374151;
+        border: 1px solid var(--border);
       }
       #answer {
-        margin-top: 16px;
+        margin-top: 18px;
         white-space: pre-wrap;
         line-height: 1.6;
         border-top: 1px solid #e5e7eb;
-        padding-top: 16px;
+        padding: 16px 4px 2px;
+        min-height: 120px;
+      }
+      #answer.typing {
+        color: #334155;
+      }
+      #answer.success {
+        color: var(--success);
       }
       .error {
-        color: #b91c1c;
+        color: var(--danger);
+      }
+      .pulse {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #94a3b8;
+        animation: blink 1s infinite ease-in-out;
+      }
+      @keyframes blink {
+        0%,
+        100% {
+          transform: translateY(0);
+          opacity: 0.3;
+        }
+        50% {
+          transform: translateY(-2px);
+          opacity: 1;
+        }
       }
     </style>
   </head>
   <body>
     <main class="card">
       <h1>AI 问答助手界面</h1>
-      <p class="meta">provider=<span id="provider"></span>, model=<span id="model"></span></p>
+      <p class="meta">
+        <span class="meta-chip">provider=<span id="provider"></span></span>
+        <span class="meta-chip">model=<span id="model"></span></span>
+      </p>
       <label for="system">系统提示词</label>
       <textarea id="system" placeholder="系统提示词"></textarea>
       <label for="question">输入你的问题</label>
       <textarea id="question" placeholder="例如：请解释什么是向量数据库"></textarea>
       <div class="row">
         <button id="send">发送</button>
+        <button id="clear">清空</button>
       </div>
       <div id="answer"></div>
     </main>
@@ -99,12 +202,34 @@ HTML_PAGE = """<!doctype html>
       const questionEl = document.getElementById('question');
       const answerEl = document.getElementById('answer');
       const sendBtn = document.getElementById('send');
+      const clearBtn = document.getElementById('clear');
+
+      const setLoadingState = (loading) => {
+        sendBtn.disabled = loading;
+        if (loading) {
+          answerEl.className = 'typing';
+          answerEl.innerHTML = '思考中 <span class="pulse"></span> <span class="pulse" style="animation-delay:0.15s"></span> <span class="pulse" style="animation-delay:0.3s"></span>';
+        }
+      };
+
+      const animateText = (text) => {
+        answerEl.textContent = '';
+        answerEl.className = 'success';
+        let idx = 0;
+        const timer = setInterval(() => {
+          idx += 3;
+          answerEl.textContent = text.slice(0, idx);
+          if (idx >= text.length) {
+            clearInterval(timer);
+          }
+        }, 12);
+      };
 
       providerEl.textContent = %PROVIDER%;
       modelEl.textContent = %MODEL%;
       systemEl.value = %SYSTEM_PROMPT%;
 
-      sendBtn.addEventListener('click', async () => {
+      const submitQuestion = async () => {
         const question = questionEl.value.trim();
         if (!question) {
           answerEl.className = 'error';
@@ -112,9 +237,7 @@ HTML_PAGE = """<!doctype html>
           return;
         }
 
-        sendBtn.disabled = true;
-        answerEl.className = '';
-        answerEl.textContent = '思考中...';
+        setLoadingState(true);
 
         try {
           const resp = await fetch('/api/chat', {
@@ -132,13 +255,25 @@ HTML_PAGE = """<!doctype html>
             answerEl.textContent = data.error || '请求失败';
             return;
           }
-          answerEl.className = '';
-          answerEl.textContent = data.answer || '';
+          animateText(data.answer || '');
         } catch (err) {
           answerEl.className = 'error';
           answerEl.textContent = `网络错误: ${err}`;
         } finally {
           sendBtn.disabled = false;
+        }
+      };
+
+      sendBtn.addEventListener('click', submitQuestion);
+      clearBtn.addEventListener('click', () => {
+        questionEl.value = '';
+        answerEl.className = '';
+        answerEl.textContent = '';
+      });
+
+      questionEl.addEventListener('keydown', (event) => {
+        if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
+          submitQuestion();
         }
       });
     </script>
