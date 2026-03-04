@@ -99,6 +99,33 @@ class AnthropicProvider(ChatProvider):
             raise ProviderError(f"Anthropic 返回格式异常: {data}") from exc
 
 
+class DeepSeekProvider(ChatProvider):
+    def __init__(self, settings: Settings):
+        if not settings.deepseek_api_key:
+            raise ProviderError("DEEPSEEK_API_KEY 未设置。")
+        self.model = settings.model
+        self.base_url = settings.deepseek_base_url
+        self.api_key = settings.deepseek_api_key
+        self.timeout = settings.timeout
+
+    def chat(self, question: str, system_prompt: str | None = None) -> str:
+        messages = []
+        if system_prompt:
+            messages.append({"role": "system", "content": system_prompt})
+        messages.append({"role": "user", "content": question})
+
+        data = _post_json(
+            url=f"{self.base_url}/chat/completions",
+            payload={"model": self.model, "messages": messages},
+            headers={"Authorization": f"Bearer {self.api_key}"},
+            timeout=self.timeout,
+        )
+        try:
+            return data["choices"][0]["message"]["content"].strip()
+        except (KeyError, IndexError, TypeError) as exc:
+            raise ProviderError(f"DeepSeek 返回格式异常: {data}") from exc
+
+
 class OllamaProvider(ChatProvider):
     def __init__(self, settings: Settings):
         self.model = settings.model
@@ -123,6 +150,7 @@ def build_provider(settings: Settings) -> ChatProvider:
     providers: dict[str, type[ChatProvider]] = {
         "openai": OpenAIProvider,
         "anthropic": AnthropicProvider,
+        "deepseek": DeepSeekProvider,
         "ollama": OllamaProvider,
     }
     provider_name = settings.provider
