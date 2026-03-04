@@ -20,6 +20,11 @@ class WebUiTests(unittest.TestCase):
             code = web.main(["--port", "0"])
         self.assertEqual(code, 2)
 
+    def test_html_includes_chat_message_styles(self) -> None:
+        self.assertIn('.message.user', web.HTML_PAGE)
+        self.assertIn("appendMessage('user'", web.HTML_PAGE)
+
+
 
 if __name__ == "__main__":
     unittest.main()

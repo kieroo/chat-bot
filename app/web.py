@@ -141,20 +141,42 @@ HTML_PAGE = """<!doctype html>
       }
       #answer {
         margin-top: 18px;
-        white-space: pre-wrap;
-        line-height: 1.6;
         border-top: 1px solid #e5e7eb;
         padding: 16px 4px 2px;
         min-height: 120px;
       }
-      #answer.typing {
-        color: #334155;
+      .message {
+        max-width: 85%;
+        margin: 0 0 10px;
+        padding: 10px 12px;
+        border-radius: 12px;
+        line-height: 1.6;
+        white-space: pre-wrap;
+        box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
       }
-      #answer.success {
+      .message.user {
+        margin-left: auto;
+        background: #dbeafe;
+        color: #1e3a8a;
+      }
+      .message.assistant {
+        background: #f8fafc;
+        color: #0f172a;
+      }
+      .status {
+        color: #334155;
+        margin-bottom: 10px;
+        font-size: 14px;
+      }
+      .message.assistant.success {
+        border: 1px solid #ccfbf1;
+        background: #f0fdfa;
         color: var(--success);
       }
-      .error {
+      .message.error {
         color: var(--danger);
+        border: 1px solid #fecaca;
+        background: #fef2f2;
       }
       .pulse {
         display: inline-block;
@@ -207,20 +229,38 @@ HTML_PAGE = """<!doctype html>
       const setLoadingState = (loading) => {
         sendBtn.disabled = loading;
         if (loading) {
-          answerEl.className = 'typing';
-          answerEl.innerHTML = '思考中 <span class="pulse"></span> <span class="pulse" style="animation-delay:0.15s"></span> <span class="pulse" style="animation-delay:0.3s"></span>';
+          const status = document.createElement('div');
+          status.className = 'status';
+          status.innerHTML = '正在思考 <span class="pulse"></span> <span class="pulse" style="animation-delay:0.15s"></span> <span class="pulse" style="animation-delay:0.3s"></span>';
+          status.id = 'loading-status';
+          answerEl.appendChild(status);
+          answerEl.scrollTop = answerEl.scrollHeight;
+        } else {
+          const status = document.getElementById('loading-status');
+          if (status) {
+            status.remove();
+          }
         }
       };
 
-      const animateText = (text) => {
-        answerEl.textContent = '';
-        answerEl.className = 'success';
+      const appendMessage = (role, text, extraClass = '') => {
+        const msg = document.createElement('div');
+        msg.className = `message ${role} ${extraClass}`.trim();
+        msg.textContent = text;
+        answerEl.appendChild(msg);
+        answerEl.scrollTop = answerEl.scrollHeight;
+        return msg;
+      };
+
+      const animateText = (targetEl, text) => {
         let idx = 0;
         const timer = setInterval(() => {
           idx += 3;
-          answerEl.textContent = text.slice(0, idx);
+          targetEl.textContent = text.slice(0, idx);
+          answerEl.scrollTop = answerEl.scrollHeight;
           if (idx >= text.length) {
             clearInterval(timer);
+            targetEl.classList.add('success');
           }
         }, 12);
       };
@@ -232,10 +272,12 @@ HTML_PAGE = """<!doctype html>
       const submitQuestion = async () => {
         const question = questionEl.value.trim();
         if (!question) {
-          answerEl.className = 'error';
-          answerEl.textContent = '请先输入问题。';
+          appendMessage('assistant', '请先输入问题。', 'error');
           return;
         }
+
+        appendMessage('user', question);
+        questionEl.value = '';
 
         setLoadingState(true);
 
@@ -251,28 +293,29 @@ HTML_PAGE = """<!doctype html>
 
           const data = await resp.json();
           if (!resp.ok) {
-            answerEl.className = 'error';
-            answerEl.textContent = data.error || '请求失败';
+            appendMessage('assistant', data.error || '请求失败', 'error');
             return;
           }
-          animateText(data.answer || '');
+          const aiMessage = appendMessage('assistant', '');
+          animateText(aiMessage, data.answer || '');
         } catch (err) {
-          answerEl.className = 'error';
-          answerEl.textContent = `网络错误: ${err}`;
+          appendMessage('assistant', `网络错误: ${err}`, 'error');
         } finally {
-          sendBtn.disabled = false;
+          setLoadingState(false);
         }
       };
 
       sendBtn.addEventListener('click', submitQuestion);
       clearBtn.addEventListener('click', () => {
         questionEl.value = '';
-        answerEl.className = '';
-        answerEl.textContent = '';
+        answerEl.innerHTML = '';
       });
 
       questionEl.addEventListener('keydown', (event) => {
         if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
+          submitQuestion();
+        } else if (event.key === 'Enter' && !event.shiftKey) {
+          event.preventDefault();
           submitQuestion();
         }
       });
