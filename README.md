@@ -12,6 +12,7 @@
 - 统一的 `ChatProvider` 抽象，方便后续扩展更多模型平台。
 - 通过环境变量配置模型、URL 和 API Key。
 - 提供命令行问答入口：`python -m app.main`。
+- 提供简洁网页界面：`python -m app.web`。
 - 内置基础错误处理与参数校验。
 
 ## 快速开始
@@ -77,6 +78,14 @@ python -m app.main "请解释什么是向量数据库"
 ```bash
 python -m app.main
 ```
+
+或启动网页界面：
+
+```bash
+python -m app.web --host 0.0.0.0 --port 8000
+```
+
+浏览器打开 `http://localhost:8000` 即可使用。
 
 ## 扩展新模型提供商
 
