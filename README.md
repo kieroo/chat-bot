@@ -4,6 +4,7 @@
 
 - OpenAI（`openai`）
 - Anthropic（`anthropic`）
+- DeepSeek（`deepseek`）
 - Ollama（`ollama`，本地模型）
 
 ## 功能特点
@@ -46,6 +47,16 @@ AI_PROVIDER=anthropic
 AI_MODEL=claude-3-5-sonnet-latest
 ANTHROPIC_API_KEY=your_anthropic_api_key
 ```
+
+#### DeepSeek 示例
+
+```env
+AI_PROVIDER=deepseek
+AI_MODEL=deepseek-chat
+DEEPSEEK_API_KEY=your_deepseek_api_key
+DEEPSEEK_BASE_URL=https://api.deepseek.com/v1
+```
+
 
 #### Ollama 示例
 
